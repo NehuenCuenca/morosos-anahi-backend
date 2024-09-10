@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Models\Defaulter;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,5 +20,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::get('/greeting', function () {
-    return 'Hello World';
+    $defaulter = Defaulter::find(1);
+    // dd($defaulter->items);
+
+    return 'hola';
 });

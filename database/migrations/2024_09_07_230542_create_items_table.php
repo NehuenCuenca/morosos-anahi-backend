@@ -20,8 +20,8 @@ return new class extends Migration
                     ->onDelete('cascade');
                     
             $table->string('name', length: 50);
-            $table->int('unit_price');
-            $table->int('quantity');
+            $table->integer('unit_price');
+            $table->integer('quantity');
             $table->date('retirement_date');
 
             $table->timestamps();

@@ -17,7 +17,11 @@ class ItemFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'defaulter_id' => 1,
+            'name' => fake()->word(),
+            'unit_price' => fake()->numberBetween($min = -1000, $max = 2000),
+            'quantity' => fake()->numberBetween($min = 1, $max = 3),
+            'retirement_date' => fake()->date(),
         ];
     }
 }

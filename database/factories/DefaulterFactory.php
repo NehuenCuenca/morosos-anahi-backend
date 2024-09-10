@@ -18,6 +18,10 @@ class DefaulterFactory extends Factory
     {
         return [
             //
+            'name' => fake()->lastName(),
+            'negative_balance' => fake()->numberBetween($min = -1000,  $max = 2000),
+            'positive_balance' => fake()->numberBetween($min = -1000,  $max = 2000),
+            'total_balance' => fake()->numberBetween($min = -1000,  $max = 2000),
         ];
     }
 }

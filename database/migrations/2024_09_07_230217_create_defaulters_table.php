@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
 
             $table->string('name', length: 50);
-            $table->int('negative_balance');
-            $table->int('positive_balance');
-            $table->int('total_balance');
+            $table->integer('negative_balance');
+            $table->integer('positive_balance');
+            $table->integer('total_balance');
 
             $table->timestamps();
         });
