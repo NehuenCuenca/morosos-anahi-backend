@@ -19,10 +19,11 @@ class ItemSeeder extends Seeder
         for ($i = 0; $i < 10; $i++) {
             DB::table('items')->insert([
                 'defaulter_id' => 1,
-                'name'  => $faker->name(),
+                'name'  => $faker->word(),
                 'unit_price' => $faker->numberBetween($min = -1000, $max = 2000),
                 'quantity' => $faker->numberBetween($min = 1, $max = 3),
                 'retirement_date'    => $faker->date(),
+                'was_paid'    => $faker->boolean(25),
             ]);
         }
     }

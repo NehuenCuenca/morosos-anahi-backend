@@ -15,7 +15,13 @@ class Item extends Model
         'name',
         'unit_price',
         'quantity',
-        'retirement_date'
+        'retirement_date',
+        'was_paid'
+    ];
+    
+    protected $hidden = [
+        'created_at',
+        'updated_at',    
     ];
 
     public function defaulter(): BelongsTo

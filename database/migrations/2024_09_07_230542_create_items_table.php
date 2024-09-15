@@ -23,6 +23,7 @@ return new class extends Migration
             $table->integer('unit_price');
             $table->integer('quantity');
             $table->date('retirement_date');
+            $table->boolean('was_paid');
 
             $table->timestamps();
         });

@@ -22,6 +22,7 @@ class ItemFactory extends Factory
             'unit_price' => fake()->numberBetween($min = -1000, $max = 2000),
             'quantity' => fake()->numberBetween($min = 1, $max = 3),
             'retirement_date' => fake()->date(),
+            'was_paid' => fake()->boolean(25),
         ];
     }
 }
