@@ -12,9 +12,14 @@ class Defaulter extends Model
 
     protected $fillable = [
         'name',
-        'negative_balance',
-        'positive_balance',
+        'debt_balance',
+        'discount_balance',
         'total_balance'        
+    ];
+
+    protected $hidden = [
+        'created_at',
+        'updated_at',    
     ];
 
     public function items(): HasMany
