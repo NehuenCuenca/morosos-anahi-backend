@@ -2,7 +2,8 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Models\Defaulter;
+use App\Http\Controllers\DefaulterController;
+use App\Http\Controllers\ItemController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,10 +19,8 @@ use App\Models\Defaulter;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+ 
+Route::resource('defaulters', DefaulterController::class);
+Route::get('/defaulters/{id}/items', [DefaulterController::class, 'get_items']);
 
-Route::get('/greeting', function () {
-    $defaulter = Defaulter::find(1);
-    // dd($defaulter->items);
-
-    return 'hola';
-});
+Route::resource('items', ItemController::class);
