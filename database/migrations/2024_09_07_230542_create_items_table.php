@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('name', length: 50);
             $table->integer('unit_price');
             $table->integer('quantity');
-            $table->date('retirement_date');
+            $table->dateTime('retirement_date');
             $table->boolean('was_paid');
 
             $table->timestamps();

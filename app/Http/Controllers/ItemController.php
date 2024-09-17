@@ -37,7 +37,7 @@ class ItemController extends Controller
             'name' => $request->input('name'),
             'unit_price' => $request->input('unit_price'),
             'quantity' => $request->input('quantity', 1),
-            'retirement_date' => $request->input('retirement_date', Carbon::now()->format('Y-m-d') ),
+            'retirement_date' => $request->input('retirement_date', Carbon::now()->toDateTimeString('Y-m-d Hh:mm') ),
             'was_paid' => $request->input('was_paid', 0),
         ]);
 
