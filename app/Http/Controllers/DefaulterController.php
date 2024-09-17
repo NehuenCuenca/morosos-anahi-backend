@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Defaulter;
 use App\Http\Requests\StoreDefaulterRequest;
 use App\Http\Requests\UpdateDefaulterRequest;
+use App\Models\Item;
 
 use function App\Helpers\PricesAcumuluted;
 
@@ -29,7 +30,7 @@ class DefaulterController extends Controller
      */
     public function store(StoreDefaulterRequest $request)
     {
-        // dd($request);
+        // dd( $request );
         
         $debtPrices = PricesAcumuluted($request->input('items'), true);
         $discountPrices = PricesAcumuluted($request->input('items'), false);
@@ -40,6 +41,17 @@ class DefaulterController extends Controller
             'discount_balance' => $discountPrices ?? 0,
             'total_balance' => ($debtPrices + $discountPrices) ?? 0
         ]);
+
+        for ($i=0; $i < sizeof($request->input('items')); $i++) { 
+            Item::create([
+                "defaulter_id" => $newDefaulter->id,
+                "unit_price" => $request->items[$i]['unit_price'],
+                "quantity" => $request->items[$i]['quantity'],
+                "name" => $request->items[$i]['name'],
+                "retirement_date" => $request->items[$i]['retirement_date'],
+                "was_paid" => $request->items[$i]['was_paid'],
+            ]);
+        }
 
         return response()->json([
             'message' => "Se registro un nuevo moroso $newDefaulter->name",
