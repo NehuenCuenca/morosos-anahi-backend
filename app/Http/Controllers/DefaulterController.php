@@ -6,6 +6,7 @@ use App\Models\Defaulter;
 use App\Http\Requests\StoreDefaulterRequest;
 use App\Http\Requests\UpdateDefaulterRequest;
 use App\Models\Item;
+use Illuminate\Http\Request;
 
 use function App\Helpers\PricesAcumuluted;
 
@@ -14,13 +15,26 @@ class DefaulterController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $defaulters = Defaulter::all();
+
+        $paginateBy = $request->integer('paginatedBy', 0) ?? 0;
+        $orderByLastestRecent = $request->boolean('orderByLastestRecent', 0) ?? 0;
+        $orderByAlphabet = $request->boolean('orderByAlphabet', 0) ?? 0;
+
+        $defaulters = Defaulter::paginate($paginateBy);
+        
+        if( $orderByLastestRecent ) {
+            $defaulters = Defaulter::orderBy('created_at', 'DESC')->paginate();
+        }
+
+        if( $orderByAlphabet ) {
+            $defaulters = Defaulter::orderBy('name', 'ASC')->paginate();
+        }
 
         return response()->json([
             'message' => "Lista de todos los morosos",
-            'defaulters' => $defaulters
+            "defaulters" => $defaulters
         ]);
     }
 
@@ -117,6 +131,7 @@ class DefaulterController extends Controller
     public function get_items(int $id)
     {
         $defaulter = Defaulter::where('id', $id)->first();
+        // dd($defaulter->items);
 
         if( !isset($defaulter) ) {
             return response()->json([
@@ -124,8 +139,8 @@ class DefaulterController extends Controller
             ], 400);
         } else {
             return response()->json([
-                'message' => "Lista de items adeudados por El moroso nro $id.",
-                'items' => $defaulter->items->makeHidden('defaulter_id')
+                'message' => "Lista de items adeudados por el moroso nro $id.",
+                'items' => $defaulter->items->sortByDesc('retirement_date')->makeHidden('defaulter_id')
             ]);
         }
     }
