@@ -22,6 +22,7 @@ class DefaulterSeeder extends Seeder
                 'debt_balance' => $faker->numberBetween($min = -1000, $max = 2000),
                 'discount_balance' => $faker->numberBetween($min = -1000, $max = 2000),
                 'total_balance'    => $faker->numberBetween($min = -1000, $max = 2000),
+                'created_at'    => fake()->date(),
             ]);
         }
     }

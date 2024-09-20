@@ -14,7 +14,8 @@ class Defaulter extends Model
         'name',
         'debt_balance',
         'discount_balance',
-        'total_balance'        
+        'total_balance',
+        'created_at',
     ];
 
     protected $hidden = [
