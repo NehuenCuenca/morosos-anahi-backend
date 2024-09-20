@@ -21,6 +21,7 @@ class DefaulterController extends Controller
         $paginateBy = $request->integer('paginatedBy', 0) ?? 0;
         $orderByLastestRecent = $request->boolean('orderByLastestRecent', 0) ?? 0;
         $orderByAlphabet = $request->boolean('orderByAlphabet', 0) ?? 0;
+        $orderByLargestDebtor = $request->boolean('orderByLargestDebtor', 0) ?? 0;
 
         $defaulters = Defaulter::paginate($paginateBy);
         
@@ -30,6 +31,10 @@ class DefaulterController extends Controller
 
         if( $orderByAlphabet ) {
             $defaulters = Defaulter::orderBy('name', 'ASC')->paginate($paginateBy);
+        }
+
+        if( $orderByLargestDebtor ) {
+            $defaulters = Defaulter::orderBy('total_balance', 'DESC')->paginate($paginateBy);
         }
 
         return response()->json([
