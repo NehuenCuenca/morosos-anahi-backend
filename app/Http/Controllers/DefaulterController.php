@@ -25,11 +25,11 @@ class DefaulterController extends Controller
         $defaulters = Defaulter::paginate($paginateBy);
         
         if( $orderByLastestRecent ) {
-            $defaulters = Defaulter::orderBy('created_at', 'DESC')->paginate();
+            $defaulters = Defaulter::orderBy('created_at', 'DESC')->paginate($paginateBy);
         }
 
         if( $orderByAlphabet ) {
-            $defaulters = Defaulter::orderBy('name', 'ASC')->paginate();
+            $defaulters = Defaulter::orderBy('name', 'ASC')->paginate($paginateBy);
         }
 
         return response()->json([
