@@ -17,8 +17,8 @@ class DefaulterController extends Controller
      */
     public function index(Request $request)
     {
-
-        $paginateBy = $request->integer('paginatedBy', 0) ?? 0;
+        $defaultersLength = sizeof( Defaulter::all() );
+        $paginateBy = $request->integer('paginatedBy', $defaultersLength) ?? $defaultersLength;
         $orderByLastestRecent = $request->boolean('orderByLastestRecent', 0) ?? 0;
         $orderByAlphabet = $request->boolean('orderByAlphabet', 0) ?? 0;
         $orderByLargestDebtor = $request->boolean('orderByLargestDebtor', 0) ?? 0;
@@ -136,7 +136,7 @@ class DefaulterController extends Controller
     public function get_items(int $id)
     {
         $defaulter = Defaulter::where('id', $id)->first();
-        // dd($defaulter->items);
+        $items = $defaulter->items->sortByDesc('retirement_date')->makeHidden('defaulter_id');
 
         if( !isset($defaulter) ) {
             return response()->json([
@@ -145,8 +145,9 @@ class DefaulterController extends Controller
         } else {
             return response()->json([
                 'message' => "Lista de items adeudados por el moroso nro $id.",
-                'items' => $defaulter->items->sortByDesc('retirement_date')->makeHidden('defaulter_id')
+                'items' => $items->values()->all()
             ]);
         }
     }
+    
 }
