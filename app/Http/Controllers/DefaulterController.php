@@ -74,7 +74,7 @@ class DefaulterController extends Controller
 
         return response()->json([
             'message' => "Se registro un nuevo moroso $newDefaulter->name",
-            'newDefaulter' => $newDefaulter
+            'defaulter' => $newDefaulter
         ]);
     }
 
@@ -111,7 +111,7 @@ class DefaulterController extends Controller
 
         return response()->json([
             'message' => "Se actualizo el moroso $defaulter->id",
-            'updatedDefaulter' => $defaulter
+            'defaulter' => $defaulter
         ]);
     }
 
