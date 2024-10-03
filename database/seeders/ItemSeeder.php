@@ -22,7 +22,7 @@ class ItemSeeder extends Seeder
                 'name'  => $faker->word(),
                 'unit_price' => $faker->numberBetween($min = -1000, $max = 2000),
                 'quantity' => $faker->numberBetween($min = 1, $max = 3),
-                'retirement_date'    => $faker->dateTime(),
+                'retirement_date'    => $faker->date(),
                 'was_paid'    => $faker->boolean(25),
             ]);
         }
