@@ -8,6 +8,9 @@ use App\Http\Requests\UpdateItemRequest;
 use App\Models\Defaulter;
 use Carbon\Carbon;
 
+use function App\Helpers\PricesAcumuluted;
+use function App\Helpers\UpdateBalancesOfDefaulter;
+
 class ItemController extends Controller
 {
     /**
@@ -22,9 +25,12 @@ class ItemController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreItemRequest $request)
+    public function store(StoreItemRequest $request) 
     {
-        $defaulterExist = null !== Defaulter::find($request->input('defaulter_id'));
+        $defaulter = Defaulter::find($request->input('defaulter_id'));
+        $defaulterExist = null !== $defaulter;
+
+        // dd(Defaulter::find( $request->input('defaulter_id') )->items);
 
         if ($request->missing('defaulter_id') || !$defaulterExist) {
             return response()->json([
@@ -37,13 +43,16 @@ class ItemController extends Controller
             'name' => $request->input('name'),
             'unit_price' => $request->input('unit_price'),
             'quantity' => $request->input('quantity', 1),
-            'retirement_date' => $request->input('retirement_date', Carbon::now()->toDateTimeString('Y-m-d Hh:mm') ),
+            'retirement_date' => $request->input('retirement_date', Carbon::now()->toDateString() ),
             'was_paid' => $request->input('was_paid', 0),
         ]);
 
+        $updatedDefaulter = UpdateBalancesOfDefaulter($request->input('defaulter_id'));
+
         return response()->json([
             'message' => "Se registró un nuevo articulo $newItem->name",
-            'newItem' => $newItem
+            'newItem_id' => $newItem->id,
+            'defaulter' => $updatedDefaulter
         ]);
     }
 
@@ -69,7 +78,8 @@ class ItemController extends Controller
             ], 400);
         }
 
-        $defaulterExist = null !== Defaulter::find($request->input('defaulter_id'));
+        $defaulter = Defaulter::find($request->input('defaulter_id'));
+        $defaulterExist = null !== $defaulter;
         if ($request->has('defaulter_id') && !$defaulterExist) {
             return response()->json([
                 'message' => "No se pudo registrar el articulo ya que el ID del moroso no se encontro en la solicitud o no está registrado en la base de datos.",
@@ -84,12 +94,15 @@ class ItemController extends Controller
             ], 400);
         }
 
+        $updatedDefaulter = UpdateBalancesOfDefaulter($request->input('defaulter_id'));
+
         return response()->json([
             'message' => "Se actualizo el articulo $item->id",
-            'updatedItem' => $item
+            'updatedItem' => $item,
+            'defaulter' => $updatedDefaulter,
         ]);
     }
-
+ 
     /**
      * Tacha la deuda o se adeuda devuelta.
      */
