@@ -9,6 +9,7 @@ if(!function_exists('PricesAcumuluted')) {
         return array_reduce($items, function($acum, $item) use ($acumPositives){
             // dd($item);
             if( 
+                (!boolval($item['was_paid'])) && 
                 ($item['unit_price'] > 0 && $acumPositives) || 
                 ($item['unit_price'] < 0 && !$acumPositives)
             ){

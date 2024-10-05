@@ -109,13 +109,17 @@ class ItemController extends Controller
     public function destroy(Item $item)
     {
         $itemGotPaidOrNot = ($item->was_paid === 1) ? 0 : 1; // 0 === adeudado | 1 === tachado
-        $response = ($itemGotPaidOrNot === 1) ? 'tachado' : 'adeudado';
+        $crossOutOrDeletedText = ($itemGotPaidOrNot === 1) ? 'tachado' : 'adeudado';
 
         $item->was_paid = $itemGotPaidOrNot;
         $item->save();
 
+        $updatedDefaulter = UpdateBalancesOfDefaulter($item->defaulter_id);
+
         return response()->json([
-            'message' => "El item $item->name fue $response satisfactoriamente."
+            'message' => "El item $item->name fue $crossOutOrDeletedText satisfactoriamente.",
+            'item_id' => $item->id,
+            'defaulter' => $updatedDefaulter,
         ]);
     }
 }
