@@ -108,7 +108,7 @@ class ItemController extends Controller
      */
     public function destroy(Item $item)
     {
-        $itemGotPaidOrNot = ($item->was_paid === 1) ? 0 : 1; // 0 === adeudado | 1 === tachado
+        $itemGotPaidOrNot = ($item->was_paid) ? 0 : 1; // 0 === adeudado | 1 === tachado
         $crossOutOrDeletedText = ($itemGotPaidOrNot === 1) ? 'tachado' : 'adeudado';
 
         $item->was_paid = $itemGotPaidOrNot;

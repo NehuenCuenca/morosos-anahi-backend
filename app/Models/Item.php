@@ -24,6 +24,10 @@ class Item extends Model
         'updated_at',    
     ];
 
+    protected $casts = [
+        'was_paid' => 'boolean'
+    ];
+    
     public function defaulter(): BelongsTo
     {
         return $this->belongsTo(Defaulter::class);
