@@ -72,6 +72,8 @@ class DefaulterController extends Controller
             ]);
         }
 
+        $newDefaulter->items;
+
         return response()->json([
             'message' => "Se registro un nuevo moroso $newDefaulter->name",
             'defaulter' => $newDefaulter
@@ -83,6 +85,8 @@ class DefaulterController extends Controller
      */
     public function show(Defaulter $defaulter)
     {
+        $defaulter->items;
+
         return response()->json([
             'message' => "Informacion de moroso nro. $defaulter->id",
             'defaulter' => $defaulter
@@ -108,6 +112,8 @@ class DefaulterController extends Controller
                 'message' => "No se pudo actualizar el moroso, no se justifican los cambios a realizar",
             ], 400);
         }
+
+        $defaulter->items;
 
         return response()->json([
             'message' => "Se actualizo el moroso $defaulter->id",
