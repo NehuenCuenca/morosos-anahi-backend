@@ -10,8 +10,8 @@ if(!function_exists('PricesAcumuluted')) {
             // dd($item);
             if( 
                 (!boolval($item['was_paid'])) && 
-                ($item['unit_price'] > 0 && $acumPositives) || 
-                ($item['unit_price'] < 0 && !$acumPositives)
+                (($item['unit_price'] > 0 && $acumPositives) || 
+                ($item['unit_price'] < 0 && !$acumPositives))
             ){
                 $acum += $item['unit_price'] * $item['quantity'];
             }
