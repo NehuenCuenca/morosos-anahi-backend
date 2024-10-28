@@ -22,7 +22,8 @@ class UpdateDefaulterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            "name" => "required|max:50", 
+            "is_deleted" => "boolean",
         ];
     }
 }
