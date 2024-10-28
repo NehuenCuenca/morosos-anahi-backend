@@ -1,9 +1,10 @@
 <?php
 
+use App\Http\Controllers\DebtController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DefaulterController;
-use App\Http\Controllers\ItemController;
+use App\Http\Controllers\ThingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,6 +22,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
  
 Route::resource('defaulters', DefaulterController::class);
-Route::get('/defaulters/{id}/items', [DefaulterController::class, 'get_items']);
+Route::get('/defaulters/{defaulter}/debts', [DefaulterController::class, 'get_debts']);
 
-Route::resource('items', ItemController::class);
+Route::resource('things', ThingController::class);
+Route::resource('debts', DebtController::class);
