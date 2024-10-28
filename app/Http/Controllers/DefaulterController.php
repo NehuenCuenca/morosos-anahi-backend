@@ -5,10 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Defaulter;
 use App\Http\Requests\StoreDefaulterRequest;
 use App\Http\Requests\UpdateDefaulterRequest;
-use App\Models\Item;
 use Illuminate\Http\Request;
-
-use function App\Helpers\PricesAcumuluted;
 
 class DefaulterController extends Controller
 {
@@ -19,15 +16,11 @@ class DefaulterController extends Controller
     {
         $defaultersLength = sizeof( Defaulter::all() );
         $paginateBy = $request->integer('paginatedBy', $defaultersLength) ?? $defaultersLength;
-        $orderByLastestRecent = $request->boolean('orderByLastestRecent', 0) ?? 0;
-        $orderByAlphabet = $request->boolean('orderByAlphabet', 0) ?? 0;
-        $orderByLargestDebtor = $request->boolean('orderByLargestDebtor', 0) ?? 0;
+        $orderByAlphabet = $request->boolean('orderByAlphabet', 0);
+        $orderByLargestDebtor = $request->boolean('orderByLargestDebtor', 0);
+        $notDeletedOnes = $request->boolean('notDeletedOnes', 0);
 
-        $defaulters = Defaulter::paginate($paginateBy);
-        
-        if( $orderByLastestRecent ) {
-            $defaulters = Defaulter::orderBy('created_at', 'DESC')->paginate($paginateBy);
-        }
+        $defaulters = Defaulter::orderBy('created_at', 'DESC')->paginate($paginateBy);
 
         if( $orderByAlphabet ) {
             $defaulters = Defaulter::orderBy('name', 'ASC')->paginate($paginateBy);
@@ -37,8 +30,14 @@ class DefaulterController extends Controller
             $defaulters = Defaulter::orderBy('total_balance', 'DESC')->paginate($paginateBy);
         }
 
+        if( $notDeletedOnes ){
+            $defaulters = Defaulter::where('is_deleted', '=', false)->paginate($paginateBy);
+        }
+
+        $msgInResponse = ($request->has('paginatedBy')) ? "Lista de morosos paginada de a $paginateBy" : "Lista de todos los morosos";
+
         return response()->json([
-            'message' => "Lista de todos los morosos",
+            'message' => $msgInResponse,
             "defaulters" => $defaulters
         ]);
     }
@@ -49,30 +48,14 @@ class DefaulterController extends Controller
      */
     public function store(StoreDefaulterRequest $request)
     {
-        // dd( $request );
-        
-        $debtPrices = PricesAcumuluted($request->input('items'), true);
-        $discountPrices = PricesAcumuluted($request->input('items'), false);
-
         $newDefaulter = Defaulter::create([
-            'name' => $request->input('name'),
-            'debt_balance' => $debtPrices ?? 0,
-            'discount_balance' => $discountPrices ?? 0,
-            'total_balance' => ($debtPrices + $discountPrices) ?? 0
+            'name' => $request->string('name')->trim(),
+            'debt_balance' => 0,
+            'discount_balance' => 0,
+            'total_balance' => 0
         ]);
 
-        for ($i=0; $i < sizeof($request->input('items')); $i++) { 
-            Item::create([
-                "defaulter_id" => $newDefaulter->id,
-                "unit_price" => $request->items[$i]['unit_price'],
-                "quantity" => $request->items[$i]['quantity'],
-                "name" => $request->items[$i]['name'],
-                "retirement_date" => $request->items[$i]['retirement_date'],
-                "was_paid" => $request->items[$i]['was_paid'],
-            ]);
-        }
-
-        $newDefaulter->items;
+        $newDefaulter->debts->sortByDesc('pivot.retired_at');
 
         return response()->json([
             'message' => "Se registro un nuevo moroso $newDefaulter->name",
@@ -85,10 +68,10 @@ class DefaulterController extends Controller
      */
     public function show(Defaulter $defaulter)
     {
-        $defaulter->items;
+        $defaulter->debts;
 
         return response()->json([
-            'message' => "Informacion de moroso nro. $defaulter->id",
+            'message' => "Informacion de moroso $defaulter->name ($defaulter->id)",
             'defaulter' => $defaulter
         ]);
     }
@@ -99,13 +82,10 @@ class DefaulterController extends Controller
      */
     public function update(UpdateDefaulterRequest $request, Defaulter $defaulter)
     {
-        if( empty($request->all()) ){
-            return response()->json([
-                "message" => "Debes enviar al menos un campo para actualizar el moroso"
-            ], 400);
-        }
-
-        $defaulter->update($request->all());
+        $defaulter->update([
+            'name' => $request->string('name')->trim(),
+            'is_deleted' => $request->boolean('is_deleted'),
+        ]);
         
         if( !$defaulter->wasChanged() ){
             return response()->json([
@@ -113,10 +93,10 @@ class DefaulterController extends Controller
             ], 400);
         }
 
-        $defaulter->items;
+        $defaulter->debts->sortByDesc('pivot.retired_at');
 
         return response()->json([
-            'message' => "Se actualizo el moroso $defaulter->id",
+            'message' => "Se actualizo el moroso $defaulter->name ($defaulter->id)",
             'defaulter' => $defaulter
         ]);
     }
@@ -124,7 +104,7 @@ class DefaulterController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Defaulter $defaulter)
+    /* public function destroy(Defaulter $defaulter)
     {
         $defaulterWasDeleted = $defaulter->delete();
         
@@ -137,23 +117,15 @@ class DefaulterController extends Controller
                 'message' => "No pudo ser borrado el moroso $defaulter->name"
             ]);
         }
-    }
-
-    public function get_items(int $id)
-    {
-        $defaulter = Defaulter::where('id', $id)->first();
-        $items = $defaulter->items->sortByDesc('retirement_date')->makeHidden('defaulter_id');
-
-        if( !isset($defaulter) ) {
-            return response()->json([
-                'message' => "El moroso nro $id no fue encontrado."
-            ], 400);
-        } else {
-            return response()->json([
-                'message' => "Lista de items adeudados por el moroso nro $id.",
-                'items' => $items->values()->all()
-            ]);
-        }
-    }
+    } */
     
+    public function get_debts(Defaulter $defaulter)
+    {
+        $debts = $defaulter->debts->sortByDesc('pivot.retired_at');
+
+        return response()->json([
+            'message' => "Lista de deudas del moroso $defaulter->name ($defaulter->id).",
+            'debts' => $debts->values()->all()
+        ]);
+    }
 }
