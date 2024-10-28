@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Defaulter extends Model
 {
@@ -16,6 +16,7 @@ class Defaulter extends Model
         'discount_balance',
         'total_balance',
         'created_at',
+        'is_deleted'
     ];
 
     protected $hidden = [
@@ -23,8 +24,14 @@ class Defaulter extends Model
         'updated_at',    
     ];
 
-    public function items(): HasMany
+    protected $casts = [
+        'is_deleted' => 'boolean'
+    ];
+
+    // Many DEFAULTER's can debt many THING's
+    public function debts(): BelongsToMany
     {
-        return $this->hasMany(Item::class);
+        return $this->belongsToMany(Thing::class, 'defaulter_thing', 'defaulter_id', 'thing_id')
+                    ->withPivot('unit_price', 'quantity', 'retired_at', 'filed_at', 'was_paid');
     }
 }

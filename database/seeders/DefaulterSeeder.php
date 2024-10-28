@@ -16,12 +16,13 @@ class DefaulterSeeder extends Seeder
     {
         $faker = Faker::create();
 
-        for ($i = 0; $i < 30; $i++) {
+        for ($i = 0; $i < 20; $i++) {
             DB::table('defaulters')->insert([
                 'name'  => $faker->name,
                 'debt_balance' => $faker->numberBetween($min = -1000, $max = 2000),
                 'discount_balance' => $faker->numberBetween($min = -1000, $max = 2000),
                 'total_balance'    => $faker->numberBetween($min = -1000, $max = 2000),
+                'is_deleted' => $faker->boolean($chanceOfGettingTrue = 50),
                 'created_at'    => fake()->date(),
             ]);
         }

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->integer('debt_balance');
             $table->integer('discount_balance');
             $table->integer('total_balance');
+            $table->boolean('is_deleted');
 
             $table->timestamps();
         });

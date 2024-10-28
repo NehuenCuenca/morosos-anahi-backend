@@ -22,6 +22,7 @@ class DefaulterFactory extends Factory
             'debt_balance' => fake()->numberBetween($min = -1000,  $max = 2000),
             'discount_balance' => fake()->numberBetween($min = -1000,  $max = 2000),
             'total_balance' => fake()->numberBetween($min = -1000,  $max = 2000),
+            'is_deleted' => fake()->boolean($chanceOfGettingTrue = 50),
             'created_at' => fake()->date(),
         ];
     }
