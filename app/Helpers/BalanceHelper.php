@@ -5,15 +5,18 @@ namespace App\Helpers;
 use App\Models\Defaulter;
 
 if(!function_exists('PricesAcumuluted')) {
-    function PricesAcumuluted($items, $acumPositives){ 
-        return array_reduce($items, function($acum, $item) use ($acumPositives){
-            // dd($item);
+    function PricesAcumuluted($things, $acumPositives){ 
+        return array_reduce($things, function($acum, $thing) use ($acumPositives){
+            // dd($thing->pivot);
+            $unitPrice = $thing->pivot->unit_price;
+            $quantity = $thing->pivot->quantity;
+            $was_paid = $thing->pivot->was_paid;
             if( 
-                (!boolval($item['was_paid'])) && 
-                (($item['unit_price'] > 0 && $acumPositives) || 
-                ($item['unit_price'] < 0 && !$acumPositives))
+                (!boolval($was_paid)) && 
+                (($unitPrice > 0 && $acumPositives) || 
+                ($unitPrice < 0 && !$acumPositives))
             ){
-                $acum += $item['unit_price'] * $item['quantity'];
+                $acum += $unitPrice * $quantity;
             }
 
             return $acum;
@@ -22,11 +25,13 @@ if(!function_exists('PricesAcumuluted')) {
 };
 
 if(!function_exists('UpdateBalancesOfDefaulter')) {
-    function UpdateBalancesOfDefaulter($defaulter_id){ 
+    function UpdateBalancesOfDefaulter($defaulter_id){
+        if($defaulter_id <= 0) return;
         $defaulter = Defaulter::find($defaulter_id);
-        $itemsOfDefaulter = $defaulter->items->all();
-        $debtPrices = PricesAcumuluted($itemsOfDefaulter, true);
-        $discountPrices = PricesAcumuluted($itemsOfDefaulter, false);
+        
+        $debts = $defaulter->debts->sortByDesc('pivot.retired_at')->all();
+        $debtPrices = PricesAcumuluted($debts, true);
+        $discountPrices = PricesAcumuluted($debts, false);
 
         $defaulter->update([
             'debt_balance' => $debtPrices ?? 0,
