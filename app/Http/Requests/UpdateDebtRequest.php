@@ -29,7 +29,7 @@ class UpdateDebtRequest extends FormRequest
             "unit_price" => "integer|numeric",
             "quantity" => "integer|numeric",
             "retired_at" => "date_format:Y-m-d",
-            "filed_at" => "date_format:Y-m-d",
+            "filed_at" => "nullable|date_format:Y-m-d",
             "was_paid" => "boolean",
         ];
     }

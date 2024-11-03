@@ -32,6 +32,6 @@ class Defaulter extends Model
     public function debts(): BelongsToMany
     {
         return $this->belongsToMany(Thing::class, 'defaulter_thing', 'defaulter_id', 'thing_id')
-                    ->withPivot('unit_price', 'quantity', 'retired_at', 'filed_at', 'was_paid');
+                    ->withPivot('id', 'unit_price', 'quantity', 'retired_at', 'filed_at', 'was_paid');
     }
 }
