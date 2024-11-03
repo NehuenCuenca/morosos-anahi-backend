@@ -23,39 +23,41 @@ class DebtController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreDebtRequest $request) 
+    public function store(StoreDebtRequest $request)
     {
         $trimmedDefaulterName = $request->string('defaulter_name')->trim();
         $firstDefaulterFound = Defaulter::find($request->integer('defaulter_id'));
-        
-        if(!isset($firstDefaulterFound)){ 
+
+        if (!isset($firstDefaulterFound)) {
             $firstDefaulterFound = Defaulter::where('name', '=', $trimmedDefaulterName)->first();
         }
-                                        
+
         $defaulterAlreadyExist = $firstDefaulterFound !== null;
         $newDefaulter = null;
 
-        if( !$defaulterAlreadyExist ){
+        if (!$defaulterAlreadyExist) {
             $newDefaulter = Defaulter::create([
                 'name' => $trimmedDefaulterName,
                 'debt_balance' => 0,
                 'discount_balance' => 0,
-                'total_balance' => 0
+                'total_balance' => 0,
+                'is_deleted' => false
             ]);
         }
 
         $finalDefaulter = ($defaulterAlreadyExist) ? $firstDefaulterFound : $newDefaulter;
-        
+
         $incomingThings = $request->input('things');
-        for ($i=0; $i < sizeof($incomingThings); $i++) { 
+        for ($i = 0; $i < sizeof($incomingThings); $i++) {
             $firstThingFound = Thing::where('name', '=', $incomingThings[$i]['thing_name'])->first();
             $thingAlreadyExist = $firstThingFound !== null;
             $newThing = null;
 
-            if( !$thingAlreadyExist ){
+            if (!$thingAlreadyExist) {
                 $newThing = Thing::create([
                     "name" => $incomingThings[$i]['thing_name'],
                     "suggested_unit_price" => $incomingThings[$i]['unit_price'],
+                    'is_deleted' => false
                 ]);
             } else {
                 $firstThingFound->suggested_unit_price = $incomingThings[$i]['unit_price'];
@@ -101,35 +103,29 @@ class DebtController extends Controller
      */
     public function update(UpdateDebtRequest $request, Debt $debt)
     {
-        $beforeUpdateDefaulterId = null;
+        $beforeUpdateDefaulter = Defaulter::find($debt->defaulter_id);
+        $beforeUpdateThing = Thing::find($debt->thing_id);
 
-        // if he wants to change the FK for a new or existing one...
-        if( $request->hasAny(['new_defaulter_name', 'new_thing_name']) ){ 
+        // if he wants to change the FK for a existing one or just edit the name of the same defaulter...
+        if ($request->hasAny(['new_defaulter_name', 'new_thing_name'])) {
             $trimmedDefaulterName = $request->string('new_defaulter_name')->trim();
             $trimmedThingName = $request->string('new_thing_name')->trim();
-
-            $beforeUpdateDefaulterId = $debt->defaulter_id;
+            
             $defaulterAlreadyExist = Defaulter::where('name', '=', $trimmedDefaulterName)->first();
             $thingAlreadyExist = Thing::where('name', '=', $trimmedThingName)->first();
-            
-            $debt->defaulter_id = ($defaulterAlreadyExist) ? $defaulterAlreadyExist->id : $debt->defaulter_id;
-            $debt->thing_id = ($thingAlreadyExist) ? $thingAlreadyExist->id : $debt->thing_id;
 
-            if( !$defaulterAlreadyExist ){
-                $newDefaulter = Defaulter::create([
-                    'name' => $trimmedDefaulterName,
-                    'debt_balance' => 0,
-                    'discount_balance' => 0,
-                    'total_balance' => 0
-                ]);
-
-                $debt->defaulter_id = $newDefaulter->id;
+            if( isset($defaulterAlreadyExist) ){ $debt->defaulter_id = $defaulterAlreadyExist->id; }
+            if( isset($thingAlreadyExist) ){ $debt->thing_id = $thingAlreadyExist->id; }
+               
+            if( !isset($defaulterAlreadyExist) && $request->filled('new_defaulter_name') ) { 
+                $beforeUpdateDefaulter->update(['name' => $trimmedDefaulterName]);
             }
 
-            if( !$thingAlreadyExist ){
+            if( !isset($thingAlreadyExist) && $request->filled('new_thing_name') ){
                 $newThing = Thing::create([
                     'name' => $trimmedThingName,
                     'suggested_unit_price' => $request->integer('unit_price'),
+                    'is_deleted' => false
                 ]);
 
                 $debt->thing_id = $newThing->id;
@@ -138,19 +134,29 @@ class DebtController extends Controller
             $debt->save();
         }
 
-        $debt->refresh();
-        $debt->update($request->except(['defaulter_id','thing_id']));
-        if( isset($beforeUpdateDefaulterId) ) { UpdateBalancesOfDefaulter($beforeUpdateDefaulterId); }
-        
-        if( !$debt->wasChanged() ){
+        $debt->update($request->only(['unit_price', 'quantity', 'retired_at', 'filed_at', 'was_paid']));
+
+        if( !$debt->wasChanged() && 
+            (!$beforeUpdateDefaulter->wasChanged() && !$beforeUpdateThing->wasChanged())
+        ) {
             return response()->json([
-                'message' => "No se pudo actualizar la deuda, no se justifican los cambios a realizar",
+                'message' => "NO se actualizó la deuda, debido a que no se justifican los cambios a realizar.",
+                'debt' => $debt->wasChanged(),
+                'beforeUpdateDefaulter' => $beforeUpdateDefaulter->wasChanged(),
+                'beforeUpdateThing' => $beforeUpdateThing->wasChanged()
             ], 400);
         }
 
-        if ($request->hasAny(['unit_price', 'quantity', 'was_paid'])) {
-            $updatedDefaulter = UpdateBalancesOfDefaulter($debt->defaulter_id);
+        if( isset($defaulterAlreadyExist) ){
+            UpdateBalancesOfDefaulter($beforeUpdateDefaulter->id);
         }
+
+        if( $request->hasAny(['unit_price', 'quantity', 'was_paid']) ){
+            UpdateBalancesOfDefaulter($debt->defaulter_id);
+        }
+
+        $updatedDefaulter = Defaulter::find($debt->defaulter_id);
+        $updatedDefaulter->debts;
 
         return response()->json([
             'message' => "La deuda $debt->id fue actualizada con exito.",
@@ -158,7 +164,7 @@ class DebtController extends Controller
             'defaulter' => $updatedDefaulter,
         ]);
     }
- 
+
     /**
      * hard delete
      */
