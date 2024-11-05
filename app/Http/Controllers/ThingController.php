@@ -5,15 +5,31 @@ namespace App\Http\Controllers;
 use App\Models\Thing;
 use App\Http\Requests\StoreThingRequest;
 use App\Http\Requests\UpdateThingRequest;
+use Illuminate\Http\Request;
 
 class ThingController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $thingsLength = sizeof( Thing::all() );
+        $paginateBy = $request->integer('paginatedBy', $thingsLength) ?? $thingsLength;
+        $orderByAlphabet = $request->boolean('orderByAlphabet', 0);
+
+        $things = Thing::orderBy('created_at', 'DESC')->paginate($paginateBy);
+
+        if( $orderByAlphabet ) {
+            $things = Thing::orderBy('name', 'ASC')->paginate($paginateBy);
+        }
+
+        $msgInResponse = ($request->has('paginatedBy')) ? "Lista de productos paginada de a $paginateBy" : "Lista de todos los productos";
+
+        return response()->json([
+            'message' => $msgInResponse,
+            "things" => $things
+        ]);
     }
 
 

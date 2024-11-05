@@ -135,6 +135,7 @@ class DebtController extends Controller
         }
 
         $debt->update($request->only(['unit_price', 'quantity', 'retired_at', 'filed_at', 'was_paid']));
+        Thing::find($debt->thing_id)->update(['suggested_unit_price' => $request->integer('unit_price')]);
 
         if( !$debt->wasChanged() && 
             (!$beforeUpdateDefaulter->wasChanged() && !$beforeUpdateThing->wasChanged())
