@@ -18,7 +18,8 @@ class DefaulterController extends Controller
         $paginateBy = $request->integer('paginatedBy', $defaultersLength) ?? $defaultersLength;
         $orderByAlphabet = $request->boolean('orderByAlphabet', 0);
         $orderByLargestDebtor = $request->boolean('orderByLargestDebtor', 0);
-        $notDeletedOnes = $request->boolean('notDeletedOnes', 0);
+        $orderByOldestCreated = $request->boolean('orderByOldestCreated', 0);
+        // $eliminated = $request->boolean('eliminated', 0);
 
         $defaulters = Defaulter::orderBy('created_at', 'DESC')->paginate($paginateBy);
 
@@ -29,9 +30,9 @@ class DefaulterController extends Controller
         if( $orderByLargestDebtor ) {
             $defaulters = Defaulter::orderBy('total_balance', 'DESC')->paginate($paginateBy);
         }
-
-        if( $notDeletedOnes ){
-            $defaulters = Defaulter::where('is_deleted', '=', false)->paginate($paginateBy);
+        
+        if( $orderByOldestCreated ) {
+            $defaulters = Defaulter::orderBy('created_at', 'ASC')->paginate($paginateBy);
         }
 
         $msgInResponse = ($request->has('paginatedBy')) ? "Lista de morosos paginada de a $paginateBy" : "Lista de todos los morosos";
