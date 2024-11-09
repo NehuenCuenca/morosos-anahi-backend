@@ -55,11 +55,11 @@ class DefaulterController extends Controller
             'total_balance' => 0
         ]);
 
-        $newDefaulter->debts->sortByDesc('pivot.retired_at');
+        $newDefaulter->debts;
 
         return response()->json([
             'message' => "Se registro un nuevo moroso $newDefaulter->name",
-            'defaulter' => $newDefaulter
+            'defaulter' => $newDefaulter,
         ]);
     }
 
@@ -121,7 +121,7 @@ class DefaulterController extends Controller
     
     public function get_debts(Defaulter $defaulter)
     {
-        $debts = $defaulter->debts->sortByDesc('pivot.retired_at');
+        $debts = $defaulter->debts;
 
         return response()->json([
             'message' => "Lista de deudas del moroso $defaulter->name ($defaulter->id).",
