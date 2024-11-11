@@ -7,7 +7,9 @@ use App\Http\Requests\UpdateDebtRequest;
 use App\Models\Thing;
 use App\Models\Debt;
 use App\Models\Defaulter;
+
 use function App\Helpers\UpdateBalancesOfDefaulter;
+use function App\Helpers\GetDateTimeFormated;
 
 class DebtController extends Controller
 {
@@ -72,8 +74,8 @@ class DebtController extends Controller
                 "thing_id" => $thingIdToRecord,
                 "unit_price" => $unitPriceToRecord,
                 "quantity" => $incomingThings[$i]['quantity'],
-                "retired_at" => $incomingThings[$i]['retired_at'],
-                "filed_at" => $incomingThings[$i]['filed_at'],
+                "retired_at" => GetDateTimeFormated($incomingThings[$i]['retired_at']),
+                "filed_at" => GetDateTimeFormated($incomingThings[$i]['filed_at']),
                 "was_paid" => $incomingThings[$i]['was_paid'],
             ]);
         }
@@ -134,7 +136,12 @@ class DebtController extends Controller
             $debt->save();
         }
 
-        $debt->update($request->only(['unit_price', 'quantity', 'retired_at', 'filed_at', 'was_paid']));
+        // $getDateFormated = fn($inputDate) => Carbon::parse($inputDate)->toDateTimeLocalString('second');
+        $debt->update([
+            ...$request->only(['unit_price', 'quantity', 'was_paid']), 
+            'retired_at' => ($request->has('retired_at')) ? GetDateTimeFormated($request->retired_at) : $debt->retired_at,
+            'filed_at' => GetDateTimeFormated($request->filed_at)
+        ]);
         Thing::find($debt->thing_id)->update(['suggested_unit_price' => $request->integer('unit_price')]);
 
         if( !$debt->wasChanged() && 

@@ -28,8 +28,8 @@ class UpdateDebtRequest extends FormRequest
             "thing_id" => "exists:App\Models\Thing,id",
             "unit_price" => "integer|numeric",
             "quantity" => "integer|numeric",
-            "retired_at" => "date_format:Y-m-d",
-            "filed_at" => "nullable|date_format:Y-m-d",
+            "retired_at" => "filled",
+            "filed_at" => "nullable",
             "was_paid" => "boolean",
         ];
     }
