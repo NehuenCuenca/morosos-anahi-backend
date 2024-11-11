@@ -3,9 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+// use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 
-class Debt extends Model
+class Debt extends Pivot
 {
     use HasFactory;
 
@@ -27,6 +28,8 @@ class Debt extends Model
     ];
 
     protected $casts = [
-        'was_paid' => 'boolean'
+        'was_paid' => 'boolean',
+        'retired_at' => 'datetime:Y-m-d\TH:i',
+        'filed_at' => 'datetime:Y-m-d\TH:i'
     ];
 }
