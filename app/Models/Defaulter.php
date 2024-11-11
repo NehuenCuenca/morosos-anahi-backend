@@ -34,6 +34,7 @@ class Defaulter extends Model
         return $this->belongsToMany(Thing::class, 'defaulter_thing', 'defaulter_id', 'thing_id')
                     ->withPivot('id', 'unit_price', 'quantity', 'retired_at', 'filed_at', 'was_paid')
                     ->orderByPivot('filed_at', 'ASC')
-                    ->orderByPivot('retired_at', 'DESC');
+                    ->orderByPivot('retired_at', 'DESC')
+                    ->using(Debt::class);
     }
 }
