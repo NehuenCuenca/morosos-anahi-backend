@@ -22,7 +22,8 @@
     },
     "autoload": {
         "files": [
-            "app/Helpers/BalanceHelper.php"
+            "app/Helpers/BalanceHelper.php",
+            "app/Helpers/DateHelper.php"
         ],
         "psr-4": {
             "App\\": "app/",
