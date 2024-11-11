@@ -26,8 +26,8 @@ return new class extends Migration
                     
             $table->integer('unit_price');
             $table->integer('quantity');
-            $table->date('retired_at');
-            $table->date('filed_at')->nullable();
+            $table->timestamp('retired_at');
+            $table->timestamp('filed_at')->nullable();
             $table->boolean('was_paid');
 
             $table->timestamps();

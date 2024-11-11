@@ -21,8 +21,8 @@ class DebtFactory extends Factory
             'thing_id' => fake()->numberBetween($min = 1, $max = 10),
             'unit_price' => fake()->numberBetween($min = -1000, $max = 2000),
             'quantity' => fake()->numberBetween($min = 1, $max = 3),
-            'retired_at' => fake()->date(),
-            'filed_at' => fake()->date(),
+            'retired_at' => fake()->dateTimeThisDecade($max = 'now', $timezone = "America/Argentina/Buenos_Aires"),
+            'filed_at' => fake()->dateTimeThisDecade($max = 'now', $timezone = "America/Argentina/Buenos_Aires"),
             'was_paid' => fake()->boolean(25),
         ];
     }

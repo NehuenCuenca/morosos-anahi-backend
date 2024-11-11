@@ -22,8 +22,8 @@ class DebtSeeder extends Seeder
                 'thing_id' => $faker->numberBetween($min = 1, $max = 10),
                 'unit_price' => $faker->numberBetween($min = -1000, $max = 2000),
                 'quantity' => $faker->numberBetween($min = 1, $max = 3),
-                'retired_at' => $faker->date(),
-                'filed_at' => $faker->date(),
+                'retired_at' => $faker->dateTimeThisDecade($max = 'now', $timezone = "America/Argentina/Buenos_Aires"),
+                'filed_at' => $faker->dateTimeThisDecade($max = 'now', $timezone = "America/Argentina/Buenos_Aires"),
                 'was_paid' => $faker->boolean(25),
             ]);
         }
