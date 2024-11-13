@@ -7,6 +7,8 @@ use App\Http\Requests\UpdateDebtRequest;
 use App\Models\Thing;
 use App\Models\Debt;
 use App\Models\Defaulter;
+use Exception;
+use Illuminate\Support\Facades\DB;
 
 use function App\Helpers\UpdateBalancesOfDefaulter;
 use function App\Helpers\GetDateTimeFormated;
@@ -37,56 +39,68 @@ class DebtController extends Controller
         $defaulterAlreadyExist = $firstDefaulterFound !== null;
         $newDefaulter = null;
 
-        if (!$defaulterAlreadyExist) {
-            $newDefaulter = Defaulter::create([
-                'name' => $trimmedDefaulterName,
-                'debt_balance' => 0,
-                'discount_balance' => 0,
-                'total_balance' => 0,
-                'is_deleted' => false
-            ]);
-        }
-
-        $finalDefaulter = ($defaulterAlreadyExist) ? $firstDefaulterFound : $newDefaulter;
-
-        $incomingThings = $request->input('things');
-        for ($i = 0; $i < sizeof($incomingThings); $i++) {
-            $firstThingFound = Thing::where('name', '=', $incomingThings[$i]['thing_name'])->first();
-            $thingAlreadyExist = $firstThingFound !== null;
-            $newThing = null;
-
-            if (!$thingAlreadyExist) {
-                $newThing = Thing::create([
-                    "name" => $incomingThings[$i]['thing_name'],
-                    "suggested_unit_price" => $incomingThings[$i]['unit_price'],
+        try {
+            DB::beginTransaction();
+            if (!$defaulterAlreadyExist) {
+                $newDefaulter = Defaulter::create([
+                    'name' => $trimmedDefaulterName,
+                    'debt_balance' => 0,
+                    'discount_balance' => 0,
+                    'total_balance' => 0,
                     'is_deleted' => false
                 ]);
-            } else {
-                $firstThingFound->suggested_unit_price = $incomingThings[$i]['unit_price'];
-                $firstThingFound->save();
             }
+            
+            $finalDefaulter = ($defaulterAlreadyExist) ? $firstDefaulterFound : $newDefaulter;
+    
+            $incomingThings = $request->input('things');
+            for ($i = 0; $i < sizeof($incomingThings); $i++) {
+                $firstThingFound = Thing::where('name', '=', $incomingThings[$i]['thing_name'])->first();
+                $thingAlreadyExist = $firstThingFound !== null;
+                $newThing = null;
+    
+                if (!$thingAlreadyExist) {
+                    $newThing = Thing::create([
+                        "name" => $incomingThings[$i]['thing_name'],
+                        "suggested_unit_price" => $incomingThings[$i]['unit_price'],
+                        'is_deleted' => false
+                    ]);
+                } else {
+                    $firstThingFound->suggested_unit_price = $incomingThings[$i]['unit_price'];
+                    $firstThingFound->save();
+                }
+    
+                $thingIdToRecord = ($thingAlreadyExist) ? $firstThingFound['id'] : $newThing['id'];
+                $unitPriceToRecord = ($thingAlreadyExist) ? $firstThingFound['suggested_unit_price'] : $newThing['suggested_unit_price'];
+    
+                Debt::create([
+                    "defaulter_id" => $finalDefaulter->id,
+                    "thing_id" => $thingIdToRecord,
+                    "unit_price" => $unitPriceToRecord,
+                    "quantity" => $incomingThings[$i]['quantity'],
+                    "retired_at" => GetDateTimeFormated($incomingThings[$i]['retired_at']),
+                    "filed_at" => GetDateTimeFormated($incomingThings[$i]['filed_at']),
+                    "was_paid" => $incomingThings[$i]['was_paid'],
+                ]);
+            }
+    
+            $finalDefaulter = UpdateBalancesOfDefaulter($finalDefaulter->id);
+            $finalDefaulter->debts->sortByDesc('pivot.retired_at');
 
-            $thingIdToRecord = ($thingAlreadyExist) ? $firstThingFound['id'] : $newThing['id'];
-            $unitPriceToRecord = ($thingAlreadyExist) ? $firstThingFound['suggested_unit_price'] : $newThing['suggested_unit_price'];
-
-            Debt::create([
-                "defaulter_id" => $finalDefaulter->id,
-                "thing_id" => $thingIdToRecord,
-                "unit_price" => $unitPriceToRecord,
-                "quantity" => $incomingThings[$i]['quantity'],
-                "retired_at" => GetDateTimeFormated($incomingThings[$i]['retired_at']),
-                "filed_at" => GetDateTimeFormated($incomingThings[$i]['filed_at']),
-                "was_paid" => $incomingThings[$i]['was_paid'],
+            DB::commit();
+    
+            return response()->json([
+                'message' => "Se registró la deuda exitosamente a nombre de: $finalDefaulter->name",
+                'defaulter' => $finalDefaulter
             ]);
-        }
+        } catch (\Throwable $th) {
+            DB::rollback();
 
-        $finalDefaulter = UpdateBalancesOfDefaulter($finalDefaulter->id);
-        $finalDefaulter->debts->sortByDesc('pivot.retired_at');
-
-        return response()->json([
-            'message' => "Se registró la deuda exitosamente a nombre de: $finalDefaulter->name",
-            'defaulter' => $finalDefaulter
-        ]);
+            return response()->json([
+                "message" => "La deuda no pudo ser creada, ocurrio un error inesperado. Ejecutando rollback de la transaccion.",
+                "throwable" => $th
+            ], 400);
+        } 
     }
 
     /**
@@ -108,69 +122,85 @@ class DebtController extends Controller
         $beforeUpdateDefaulter = Defaulter::find($debt->defaulter_id);
         $beforeUpdateThing = Thing::find($debt->thing_id);
 
-        // if he wants to change the FK for a existing one or just edit the name of the same defaulter...
-        if ($request->hasAny(['new_defaulter_name', 'new_thing_name'])) {
-            $trimmedDefaulterName = $request->string('new_defaulter_name')->trim();
-            $trimmedThingName = $request->string('new_thing_name')->trim();
-            
-            $defaulterAlreadyExist = Defaulter::where('name', '=', $trimmedDefaulterName)->first();
-            $thingAlreadyExist = Thing::where('name', '=', $trimmedThingName)->first();
+        try {
+            DB::beginTransaction();
 
-            if( isset($defaulterAlreadyExist) ){ $debt->defaulter_id = $defaulterAlreadyExist->id; }
-            if( isset($thingAlreadyExist) ){ $debt->thing_id = $thingAlreadyExist->id; }
-               
-            if( !isset($defaulterAlreadyExist) && $request->filled('new_defaulter_name') ) { 
-                $beforeUpdateDefaulter->update(['name' => $trimmedDefaulterName]);
+            // if he wants to change the FK for a existing one or just edit the name of the same defaulter...
+            if ($request->hasAny(['new_defaulter_name', 'new_thing_name'])) {
+                $trimmedDefaulterName = $request->string('new_defaulter_name')->trim();
+                $trimmedThingName = $request->string('new_thing_name')->trim();
+                
+                $defaulterAlreadyExist = Defaulter::where('name', '=', $trimmedDefaulterName)->first();
+                $thingAlreadyExist = Thing::where('name', '=', $trimmedThingName)->first();
+
+                if( isset($defaulterAlreadyExist) ){ $debt->defaulter_id = $defaulterAlreadyExist->id; }
+                if( isset($thingAlreadyExist) ){ $debt->thing_id = $thingAlreadyExist->id; }
+                
+                if( !isset($defaulterAlreadyExist) && $request->filled('new_defaulter_name') ) { 
+                    $beforeUpdateDefaulter->update(['name' => $trimmedDefaulterName]);
+                }
+
+                if( !isset($thingAlreadyExist) && $request->filled('new_thing_name') ){
+                    $newThing = Thing::create([
+                        'name' => $trimmedThingName,
+                        'suggested_unit_price' => $request->integer('unit_price'),
+                        'is_deleted' => false
+                    ]);
+
+                    $debt->thing_id = $newThing->id;
+                }
+
+                $debt->save();
             }
 
-            if( !isset($thingAlreadyExist) && $request->filled('new_thing_name') ){
-                $newThing = Thing::create([
-                    'name' => $trimmedThingName,
-                    'suggested_unit_price' => $request->integer('unit_price'),
-                    'is_deleted' => false
-                ]);
+            // $getDateFormated = fn($inputDate) => Carbon::parse($inputDate)->toDateTimeLocalString('second');
+            $debt->update([
+                ...$request->only(['unit_price', 'quantity', 'was_paid']), 
+                'retired_at' => ($request->has('retired_at')) ? GetDateTimeFormated($request->retired_at) : $debt->retired_at,
+                'filed_at' => GetDateTimeFormated($request->filed_at)
+            ]);
+            Thing::find($debt->thing_id)->update(['suggested_unit_price' => $request->integer('unit_price')]);
 
-                $debt->thing_id = $newThing->id;
+            if( !$debt->wasChanged() && 
+                (!$beforeUpdateDefaulter->wasChanged() && !$beforeUpdateThing->wasChanged())
+            ) {
+                return response()->json([
+                    'message' => "NO se actualizó la deuda, debido a que no se justifican los cambios a realizar.",
+                    'debt' => $debt->wasChanged(),
+                    'beforeUpdateDefaulter' => $beforeUpdateDefaulter->wasChanged(),
+                    'beforeUpdateThing' => $beforeUpdateThing->wasChanged()
+                ], 400);
             }
 
-            $debt->save();
-        }
+            if( isset($defaulterAlreadyExist) ){
+                UpdateBalancesOfDefaulter($beforeUpdateDefaulter->id);
+            }
 
-        // $getDateFormated = fn($inputDate) => Carbon::parse($inputDate)->toDateTimeLocalString('second');
-        $debt->update([
-            ...$request->only(['unit_price', 'quantity', 'was_paid']), 
-            'retired_at' => ($request->has('retired_at')) ? GetDateTimeFormated($request->retired_at) : $debt->retired_at,
-            'filed_at' => GetDateTimeFormated($request->filed_at)
-        ]);
-        Thing::find($debt->thing_id)->update(['suggested_unit_price' => $request->integer('unit_price')]);
+            if( $request->hasAny(['unit_price', 'quantity', 'was_paid']) ){
+                UpdateBalancesOfDefaulter($debt->defaulter_id);
+            }
 
-        if( !$debt->wasChanged() && 
-            (!$beforeUpdateDefaulter->wasChanged() && !$beforeUpdateThing->wasChanged())
-        ) {
+            $updatedDefaulter = Defaulter::find($debt->defaulter_id);
+            $updatedDefaulter->debts;
+
+            DB::commit();
+
             return response()->json([
-                'message' => "NO se actualizó la deuda, debido a que no se justifican los cambios a realizar.",
-                'debt' => $debt->wasChanged(),
-                'beforeUpdateDefaulter' => $beforeUpdateDefaulter->wasChanged(),
-                'beforeUpdateThing' => $beforeUpdateThing->wasChanged()
+                'message' => "La deuda $debt->id fue actualizada con exito.",
+                'updatedDebt' => $debt,
+                'defaulter' => $updatedDefaulter,
+            ]);
+
+        } catch (\Throwable $th) {
+            DB::rollback();
+
+            return response()->json([
+                "message" => "La deuda no pudo ser editada, ocurrio un error inesperado. Ejecutando rollback de la transaccion.",
+                "throwable" => $th
             ], 400);
         }
 
-        if( isset($defaulterAlreadyExist) ){
-            UpdateBalancesOfDefaulter($beforeUpdateDefaulter->id);
-        }
-
-        if( $request->hasAny(['unit_price', 'quantity', 'was_paid']) ){
-            UpdateBalancesOfDefaulter($debt->defaulter_id);
-        }
-
-        $updatedDefaulter = Defaulter::find($debt->defaulter_id);
-        $updatedDefaulter->debts;
-
-        return response()->json([
-            'message' => "La deuda $debt->id fue actualizada con exito.",
-            'updatedDebt' => $debt,
-            'defaulter' => $updatedDefaulter,
-        ]);
+        
     }
 
     /**
