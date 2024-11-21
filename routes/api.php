@@ -23,6 +23,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
  
 Route::resource('defaulters', DefaulterController::class);
 Route::get('/defaulters/{defaulter}/debts', [DefaulterController::class, 'get_debts']);
+Route::get('/defaulters/{defaulter}/excel-debts', [DefaulterController::class, 'get_excel_debts_by_month_year']);
 
 Route::resource('things', ThingController::class);
 Route::resource('debts', DebtController::class);

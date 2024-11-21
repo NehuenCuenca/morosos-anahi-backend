@@ -5,7 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Defaulter;
 use App\Http\Requests\StoreDefaulterRequest;
 use App\Http\Requests\UpdateDefaulterRequest;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use App\Exports\DefaulterDebtsOfMonthExport;
+use App\Http\Requests\GetExcelDebtsByMonthYearRequest;
+use Maatwebsite\Excel\Facades\Excel;
 
 class DefaulterController extends Controller
 {
@@ -128,5 +132,20 @@ class DefaulterController extends Controller
             'message' => "Lista de deudas del moroso $defaulter->name ($defaulter->id).",
             'debts' => $debts->values()->all()
         ]);
+    }
+
+    public function get_excel_debts_by_month_year(GetExcelDebtsByMonthYearRequest $request, Defaulter $defaulter)
+    {
+        $currentDatetime = Carbon::now();
+        $month = $request->integer('month', $currentDatetime->month);
+        $year = $request->integer('year', $currentDatetime->year); 
+
+        $monthYearFormated = Carbon::create($year, $month, null, null)->format('m-Y');
+
+        $formatedDefaulterName = str_replace(' ', '-', $defaulter->name);
+        $typeFile = ".xlsx";
+        $customFileName = "{$formatedDefaulterName}_{$monthYearFormated}_debts{$typeFile}";
+
+        return Excel::download(new DefaulterDebtsOfMonthExport($defaulter, $month, $year), $customFileName);
     }
 }
