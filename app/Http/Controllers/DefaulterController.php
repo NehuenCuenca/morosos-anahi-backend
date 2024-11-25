@@ -73,8 +73,6 @@ class DefaulterController extends Controller
      */
     public function show(Defaulter $defaulter)
     {
-        $defaulter->debts;
-
         return response()->json([
             'message' => "Informacion de moroso $defaulter->name ($defaulter->id)",
             'defaulter' => $defaulter
@@ -125,12 +123,10 @@ class DefaulterController extends Controller
     } */
     
     public function get_debts(Defaulter $defaulter)
-    {
-        $debts = $defaulter->debts;
-
+    {            
         return response()->json([
             'message' => "Lista de deudas del moroso $defaulter->name ($defaulter->id).",
-            'debts' => $debts->values()->all()
+            'debts' => $defaulter->debts_by_month_year
         ]);
     }
 
