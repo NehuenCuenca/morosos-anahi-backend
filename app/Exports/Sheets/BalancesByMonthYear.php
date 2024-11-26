@@ -6,11 +6,12 @@ use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithStrictNullComparison;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class BalancesByMonthYear implements FromCollection, WithTitle, WithHeadings, ShouldAutoSize, WithStyles
+class BalancesByMonthYear implements FromCollection, WithStrictNullComparison, WithTitle, WithHeadings, ShouldAutoSize, WithStyles
 {
     private $defaulter;
     private $month;

@@ -5,8 +5,6 @@ use App\Exports\Sheets\BalancesByMonthYear;
 use App\Exports\Sheets\DebtsByMonthYear;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
-use Maatwebsite\Excel\Concerns\WithStyles;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class DefaulterDebtsOfMonthExport implements WithMultipleSheets {
     use Exportable;
