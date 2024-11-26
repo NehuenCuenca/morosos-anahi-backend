@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+
+use function App\Helpers\CustomFormatByYear_Month_MonthName;
 
 class Defaulter extends Model
 {
@@ -54,9 +55,9 @@ class Defaulter extends Model
     protected function debtsByMonthYear(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->debts
-                                ->groupBy( fn($debt) => Carbon::parse($debt->pivot->retired_at)->format('Y_m_F'))
-                                ->sortByDesc( fn($debtsByMonthYear) => Carbon::parse(collect($debtsByMonthYear)->first()->pivot->retired_at)->format('Y_m_F'))
+            get: fn() => $this->debts
+                                ->groupBy( fn($debt) => CustomFormatByYear_Month_MonthName($debt) )
+                                ->sortByDesc( fn($debtsByMonthYear) => CustomFormatByYear_Month_MonthName(collect($debtsByMonthYear)->first()))
         );
     }
 }

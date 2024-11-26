@@ -11,3 +11,10 @@ if(!function_exists('GetDateTimeFormated')) {
                 : null;
     }
 };
+
+if(!function_exists('CustomFormatByYear_Month_MonthName')) {
+    function CustomFormatByYear_Month_MonthName($debt){
+        $retiredAt = Carbon::parse($debt->pivot->retired_at)->locale('es');
+        return "{$retiredAt->year}_{$retiredAt->month}_{$retiredAt->monthName}";
+    }
+};
