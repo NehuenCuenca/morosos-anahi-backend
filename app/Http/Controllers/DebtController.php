@@ -199,33 +199,27 @@ class DebtController extends Controller
                 "throwable" => $th
             ], 400);
         }
-
-        
     }
 
     /**
-     * hard delete
+     * hard delete of a debt
      */
-    /* public function destroy(Debt $debt)
+    public function destroy(Debt $debt)
     {
-        $defaulter = Defaulter::find($debt->defaulter_id);
-        $thingName = Thing::find($debt->thing_id)->name;
-        $debtTotalPrice = ($debt->unit_price * $debt->quantity);
-
         $debtWasDeleted = $debt->delete();
 
-        $updatedDefaulter = UpdateBalancesOfDefaulter($defaulter->id);
+        $updatedDefaulter = UpdateBalancesOfDefaulter($debt->defaulter_id);
  
         if($debtWasDeleted) {
             return response()->json([
-                'message' => "La deuda de '$defaulter->name' ($thingName $$debtTotalPrice) fue borrado exitosamente.",
-                'oldDefaulter' => $defaulter,
-                'newDefaulter' => $updatedDefaulter
+                'message' => "La deuda '$debt->unit_price_quantity_detail' de '$updatedDefaulter->name' fue borrado exitosamente.",
+                'debtDeleted' => $debt,
+                'defaulter' => $updatedDefaulter
             ]);
         } else {
             return response()->json([
-                'message' => "No pudo ser borrada la deuda $debt->name"
+                'message' => "No pudo ser borrada la deuda '$debt->unit_price_quantity_detail' de '$updatedDefaulter->name'."
             ]);
         }
-    } */
+    }
 }
