@@ -31,8 +31,8 @@ class Debt extends Pivot
 
     protected $casts = [
         'was_paid' => 'boolean',
-        'retired_at' => 'datetime:Y-m-d\TH:i',
-        'filed_at' => 'datetime:Y-m-d\TH:i'
+        'retired_at' => 'datetime:Y-m-d\TH:i:s',
+        'filed_at' => 'datetime:Y-m-d\TH:i:s'
     ];
 
     /**

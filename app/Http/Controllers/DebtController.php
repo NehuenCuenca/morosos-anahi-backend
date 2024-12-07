@@ -7,7 +7,6 @@ use App\Http\Requests\UpdateDebtRequest;
 use App\Models\Thing;
 use App\Models\Debt;
 use App\Models\Defaulter;
-use Exception;
 use Illuminate\Support\Facades\DB;
 
 use function App\Helpers\UpdateBalancesOfDefaulter;
