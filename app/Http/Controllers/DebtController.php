@@ -9,6 +9,7 @@ use App\Models\Debt;
 use App\Models\Defaulter;
 use Illuminate\Support\Facades\DB;
 
+use function App\Helpers\FixBalancesByCrossAndJoin;
 use function App\Helpers\UpdateBalancesOfDefaulter;
 use function App\Helpers\GetDateTimeFormated;
 
@@ -38,6 +39,8 @@ class DebtController extends Controller
         $defaulterAlreadyExist = $firstDefaulterFound !== null;
         $newDefaulter = null;
 
+        $defaulterHasDeliverPayment = false;
+
         try {
             DB::beginTransaction();
             if (!$defaulterAlreadyExist) {
@@ -52,37 +55,39 @@ class DebtController extends Controller
             
             $finalDefaulter = ($defaulterAlreadyExist) ? $firstDefaulterFound : $newDefaulter;
     
-            $incomingThings = $request->input('things');
-            for ($i = 0; $i < sizeof($incomingThings); $i++) {
-                $firstThingFound = Thing::where('name', '=', $incomingThings[$i]['thing_name'])->first();
-                $thingAlreadyExist = $firstThingFound !== null;
-                $newThing = null;
-    
-                if (!$thingAlreadyExist) {
-                    $newThing = Thing::create([
-                        "name" => $incomingThings[$i]['thing_name'],
-                        "suggested_unit_price" => $incomingThings[$i]['unit_price'],
-                        'is_deleted' => false
-                    ]);
-                } else {
-                    $firstThingFound->suggested_unit_price = $incomingThings[$i]['unit_price'];
-                    $firstThingFound->save();
-                }
-    
-                $thingIdToRecord = ($thingAlreadyExist) ? $firstThingFound['id'] : $newThing['id'];
-                $unitPriceToRecord = ($thingAlreadyExist) ? $firstThingFound['suggested_unit_price'] : $newThing['suggested_unit_price'];
-    
-                Debt::create([
-                    "defaulter_id" => $finalDefaulter->id,
-                    "thing_id" => $thingIdToRecord,
-                    "unit_price" => $unitPriceToRecord,
-                    "quantity" => $incomingThings[$i]['quantity'],
-                    "retired_at" => GetDateTimeFormated($incomingThings[$i]['retired_at']),
-                    "filed_at" => GetDateTimeFormated($incomingThings[$i]['filed_at']),
-                    "was_paid" => $incomingThings[$i]['was_paid'],
+            $requestThing = $request->input('thing');
+            $firstThingFound = Thing::where('name', '=', $requestThing['thing_name'])->first();
+            $thingAlreadyExist = $firstThingFound !== null;
+            $newThing = null;
+
+            $defaulterHasDeliverPayment = ($requestThing['unit_price'] < 0) && ($requestThing['thing_name'] === 'entrego');
+
+            if (!$thingAlreadyExist) {
+                $newThing = Thing::create([
+                    "name" => $requestThing['thing_name'],
+                    "suggested_unit_price" => $requestThing['unit_price'],
+                    'is_deleted' => false
                 ]);
+            } else {
+                $firstThingFound->suggested_unit_price = $requestThing['unit_price'];
+                $firstThingFound->save();
             }
     
+            $thingIdToRecord = ($thingAlreadyExist) ? $firstThingFound['id'] : $newThing['id'];
+            $unitPriceToRecord = ($thingAlreadyExist) ? $firstThingFound['suggested_unit_price'] : $newThing['suggested_unit_price'];
+
+            $newDebt = Debt::create([
+                "defaulter_id" => $finalDefaulter->id,
+                "thing_id" => $thingIdToRecord,
+                "unit_price" => $unitPriceToRecord,
+                "quantity" => $requestThing['quantity'],
+                "retired_at" => GetDateTimeFormated($requestThing['retired_at']),
+                "filed_at" => GetDateTimeFormated($requestThing['filed_at']),
+                "was_paid" => $requestThing['was_paid'],
+            ]);
+
+            if( $defaulterHasDeliverPayment ){ FixBalancesByCrossAndJoin($newDebt); }
+            
             $finalDefaulter = UpdateBalancesOfDefaulter($finalDefaulter->id);
             $finalDefaulter->debts->sortByDesc('pivot.retired_at');
 
@@ -90,7 +95,8 @@ class DebtController extends Controller
     
             return response()->json([
                 'message' => "Se registró la deuda exitosamente a nombre de: $finalDefaulter->name",
-                'defaulter' => $finalDefaulter
+                'defaulter' => $finalDefaulter,
+                'defaulterHasDeliverPayment' => $defaulterHasDeliverPayment
             ]);
         } catch (\Throwable $th) {
             DB::rollback();

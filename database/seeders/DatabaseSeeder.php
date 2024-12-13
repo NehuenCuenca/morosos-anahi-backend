@@ -14,10 +14,11 @@ class DatabaseSeeder extends Seeder
     {
         // \App\Models\User::factory(10)->create();
 
-        // \App\Models\User::factory()->create([
-        //     'name' => 'Test User',
-        //     'email' => 'test@example.com',
-        // ]);
+        \App\Models\Thing::factory()->create([
+            'name' => 'PASADA EN LIMPIO',
+            'suggested_unit_price' => 0,
+            'is_deleted' => false,
+        ]);
 
         $this->call([
             DefaulterSeeder::class,

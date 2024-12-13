@@ -24,7 +24,7 @@ class StoreDebtRequest extends FormRequest
         return [
             // 'defaulter_id' => 'required',
             "defaulter_name" => "required|max:50", 
-            "things" => "array|filled"
+            "thing" => "required"
         ];
     }
 }
