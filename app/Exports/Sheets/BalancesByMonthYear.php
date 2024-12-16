@@ -2,6 +2,7 @@
 
 namespace App\Exports\Sheets;
 
+use App\Models\Thing;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -33,20 +34,52 @@ class BalancesByMonthYear implements FromCollection, WithStrictNullComparison, W
     
     public function collection()
     {
-        $debtBalance = intval( $this->defaulter->debts()
+        $debtsByMonthYearQuery = $this->defaulter->debts()
                             ->whereMonth('defaulter_thing.retired_at', $this->month)
                             ->whereYear('defaulter_thing.retired_at', $this->year)
-                            ->where('defaulter_thing.unit_price', '>', 0)
-                            ->sum('defaulter_thing.unit_price') );
-                            
-        $discountBalance = intval( $this->defaulter->debts()
-                            ->whereMonth('defaulter_thing.retired_at', $this->month)
-                            ->whereYear('defaulter_thing.retired_at', $this->year)
-                            ->where('defaulter_thing.unit_price', '<', 0)
-                            ->sum('defaulter_thing.unit_price') );
+                            ->get();
 
+        $initialBalancesAcumulator = [
+            'againstOfDefaulter' => 0,
+            'inFavorOfDefaulter' => 0,
+            'total' => 0
+        ];
+
+        $balances = $debtsByMonthYearQuery
+                        ->reverse()
+                        ->reduce(function (array $acum, Thing $thing) use ($initialBalancesAcumulator, $debtsByMonthYearQuery) {
+                            if($thing->pivot->was_paid) return $acum;
+                            
+                            $totalOfDebt = $thing->pivot->unit_price * $thing->pivot->quantity;
+                            $againstBalances = ($totalOfDebt > 0) 
+                                                    ? $totalOfDebt+$acum['againstOfDefaulter']
+                                                    : $acum['againstOfDefaulter'];
+                            $inFavorBalances = ($totalOfDebt < 0) 
+                                                    ? $totalOfDebt+$acum['inFavorOfDefaulter']
+                                                    : $acum['inFavorOfDefaulter'];
+                            
+                            if( $thing->name === 'PASADA EN LIMPIO' ){
+                                if( $totalOfDebt != 0 ){
+                                    return [
+                                        'againstOfDefaulter' => ($totalOfDebt > 0) ? $totalOfDebt : 0,
+                                        'inFavorOfDefaulter' => ($totalOfDebt < 0) ? $totalOfDebt : 0,
+                                        'total' => $totalOfDebt
+                                    ];
+                                } else {
+                                    return $initialBalancesAcumulator;
+                                }
+                                
+                            } else {
+                                return [
+                                    'againstOfDefaulter' => $againstBalances, 
+                                    'inFavorOfDefaulter' => $inFavorBalances,
+                                    'total' => ($againstBalances + $inFavorBalances)
+                                ];
+                            }
+                        }, $initialBalancesAcumulator);                           
+                            
         return new Collection([
-            [$debtBalance, $discountBalance, ($debtBalance + $discountBalance)],
+            [ $balances['againstOfDefaulter'], $balances['inFavorOfDefaulter'], $balances['total'] ],
         ]);
     }
 

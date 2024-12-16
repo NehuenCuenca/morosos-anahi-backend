@@ -6,11 +6,13 @@ use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithStrictNullComparison;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class DebtsByMonthYear implements FromCollection, WithTitle, WithHeadings, ShouldAutoSize, WithStyles
+class DebtsByMonthYear implements FromCollection,WithStrictNullComparison, WithTitle, WithHeadings, WithStyles, WithMapping, ShouldAutoSize
 {
     private $defaulter;
     private $month;
@@ -26,7 +28,7 @@ class DebtsByMonthYear implements FromCollection, WithTitle, WithHeadings, Shoul
     public function headings(): array
     {
         return [
-            ['NRO DEUDA', 'PRODUCTO','CANTIDAD','PRECIO UNITARIO', 'PRECIO FINAL'],
+            ['NRO DEUDA', 'PRODUCTO','CANTIDAD','PRECIO UNITARIO', 'PRECIO FINAL', 'PAGADO'],
         ];
     }
     
@@ -35,8 +37,20 @@ class DebtsByMonthYear implements FromCollection, WithTitle, WithHeadings, Shoul
         return $this->defaulter->debts()
                         ->whereMonth('defaulter_thing.retired_at', $this->month)
                         ->whereYear('defaulter_thing.retired_at', $this->year)
-                        ->select('defaulter_thing.id', 'things.name', 'defaulter_thing.quantity', 'defaulter_thing.unit_price', DB::raw('(defaulter_thing.unit_price * defaulter_thing.quantity) as final_price'))
+                        ->select('defaulter_thing.id', 'things.name', 'defaulter_thing.quantity', 'defaulter_thing.unit_price', DB::raw('(defaulter_thing.unit_price * defaulter_thing.quantity) as final_price'), 'defaulter_thing.was_paid')
                         ->get();
+    }
+
+    public function map($debt): array
+    {
+        return [
+            $debt->id,
+            $debt->name,
+            $debt->quantity,
+            $debt->unit_price,
+            $debt->final_price,
+            boolval($debt->was_paid) ? 'SI': 'NO',
+        ];
     }
 
     /**
